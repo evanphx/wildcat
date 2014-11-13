@@ -27,7 +27,12 @@ func (x *X) HandleConnection(hp *wildcat.HTTPParser, rest []byte, c net.Conn) {
 		fmt.Printf("body: %s\n", body)
 	}
 
-	c.Write(static)
+	resp := wildcat.NewResponse(c)
+	resp.AddStringHeader("X-Runtime", "8311323")
+
+	resp.WriteStatus(200)
+	resp.WriteHeaders()
+	resp.WriteBodyBytes([]byte("hello world\n"))
 }
 
 func main() {
