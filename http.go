@@ -14,13 +14,15 @@ type header struct {
 type HTTPParser struct {
 	Method, Path, Version []byte
 
-	headers []header
+	headers      []header
+	totalHeaders int
 }
 
 // Create a new parser
 func NewHTTPParser() *HTTPParser {
 	return &HTTPParser{
-		headers: make([]header, 10, 10),
+		headers:      make([]header, 10),
+		totalHeaders: 10,
 	}
 }
 
@@ -164,6 +166,13 @@ loop:
 
 			hp.headers[h] = header{headerName, input[start:i]}
 			h++
+
+			if h == hp.totalHeaders {
+				newHeaders := make([]header, hp.totalHeaders+10)
+				copy(newHeaders, hp.headers)
+				hp.headers = newHeaders
+				hp.totalHeaders += 10
+			}
 		case 3:
 			if input[i] != '\n' {
 				return 0, ErrBadProto
