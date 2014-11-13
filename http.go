@@ -50,6 +50,17 @@ var (
 	ErrUnsupported = errors.New("unsupported http feature")
 )
 
+const (
+	eNextHeader int = iota
+	eNextHeaderN
+	eHeader
+	eHeaderValueSpace
+	eHeaderValue
+	eHeaderValueN
+	eMLHeaderStart
+	eMLHeaderValue
+)
+
 // Parse the buffer as an HTTP Request. The buffer must contain the entire
 // request or Parse will return ErrMissingData for the caller to get more
 // data. (this thusly favors getting a completed request in a single Read()
@@ -135,49 +146,49 @@ loop:
 
 	var headerName []byte
 
-	state = 5
+	state = eNextHeader
 
 	start := headers
 
 	for i := headers; i < total; i++ {
 		switch state {
-		case 5:
+		case eNextHeader:
 			switch input[i] {
 			case '\r':
-				state = 6
+				state = eNextHeaderN
 			case '\n':
 				return i + 1, nil
 			case ' ', '\t':
-				state = 7
+				state = eMLHeaderStart
 			default:
 				start = i
-				state = 0
+				state = eHeader
 			}
-		case 6:
+		case eNextHeaderN:
 			if input[i] != '\n' {
 				return 0, ErrBadProto
 			}
 
 			return i + 1, nil
-		case 0:
+		case eHeader:
 			if input[i] == ':' {
 				headerName = input[start:i]
-				state = 1
+				state = eHeaderValueSpace
 			}
-		case 1:
+		case eHeaderValueSpace:
 			switch input[i] {
 			case ' ', '\t':
 				continue
 			}
 
 			start = i
-			state = 2
-		case 2:
+			state = eHeaderValue
+		case eHeaderValue:
 			switch input[i] {
 			case '\r':
-				state = 3
+				state = eHeaderValueN
 			case '\n':
-				state = 5
+				state = eNextHeader
 			default:
 				continue
 			}
@@ -191,26 +202,26 @@ loop:
 				hp.headers = newHeaders
 				hp.totalHeaders += 10
 			}
-		case 3:
+		case eHeaderValueN:
 			if input[i] != '\n' {
 				return 0, ErrBadProto
 			}
-			state = 5
+			state = eNextHeader
 
-		case 7:
+		case eMLHeaderStart:
 			switch input[i] {
 			case ' ', '\t':
 				continue
 			}
 
 			start = i
-			state = 8
-		case 8:
+			state = eMLHeaderValue
+		case eMLHeaderValue:
 			switch input[i] {
 			case '\r':
-				state = 3
+				state = eHeaderValueN
 			case '\n':
-				state = 5
+				state = eNextHeader
 			default:
 				continue
 			}
