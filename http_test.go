@@ -108,3 +108,24 @@ func TestParseMultlineHeader(t *testing.T) {
 
 	assert.Equal(t, []byte("cookie.com more host"), hp.FindHeader([]byte("Host")))
 }
+
+var specialHeaders = []byte("GET / HTTP/1.0\r\nHost: cookie.com\r\nContent-Length: 50\r\n\r\n")
+
+func TestParseSpecialHeaders(t *testing.T) {
+	hp := NewHTTPParser()
+
+	_, err := hp.Parse(specialHeaders)
+	require.NoError(t, err)
+
+	assert.Equal(t, []byte("cookie.com"), hp.Host())
+	assert.Equal(t, 50, hp.ContentLength())
+}
+
+func TestFindHeaderIgnoresCase(t *testing.T) {
+	hp := NewHTTPParser()
+
+	_, err := hp.Parse(specialHeaders)
+	require.NoError(t, err)
+
+	assert.Equal(t, []byte("50"), hp.FindHeader([]byte("content-length")))
+}

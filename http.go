@@ -2,6 +2,7 @@ package wildcat
 
 import (
 	"bytes"
+	"strconv"
 
 	"github.com/vektra/errors"
 )
@@ -16,13 +17,20 @@ type HTTPParser struct {
 
 	headers      []header
 	totalHeaders int
+
+	host     []byte
+	hostRead bool
+
+	contentLength     int
+	contentLengthRead bool
 }
 
 // Create a new parser
 func NewHTTPParser() *HTTPParser {
 	return &HTTPParser{
-		headers:      make([]header, 10),
-		totalHeaders: 10,
+		headers:       make([]header, 10),
+		totalHeaders:  10,
+		contentLength: -1,
 	}
 }
 
@@ -219,5 +227,42 @@ func (hp *HTTPParser) FindHeader(name []byte) []byte {
 		}
 	}
 
+	for _, header := range hp.headers {
+		if bytes.EqualFold(header.Name, name) {
+			return header.Value
+		}
+	}
+
 	return nil
+}
+
+var cHost = []byte("Host")
+
+func (hp *HTTPParser) Host() []byte {
+	if hp.hostRead {
+		return hp.host
+	}
+
+	hp.hostRead = true
+	hp.host = hp.FindHeader(cHost)
+	return hp.host
+}
+
+var cContentLength = []byte("Content-Length")
+
+func (hp *HTTPParser) ContentLength() int {
+	if hp.contentLengthRead {
+		return hp.contentLength
+	}
+
+	header := hp.FindHeader(cContentLength)
+	if header != nil {
+		i, err := strconv.Atoi(string(header))
+		if err == nil {
+			hp.contentLength = i
+		}
+	}
+
+	hp.contentLengthRead = true
+	return hp.contentLength
 }
