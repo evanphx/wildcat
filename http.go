@@ -32,6 +32,7 @@ func NewHTTPParser() *HTTPParser {
 	return NewSizedHTTPParser(DefaultHeaderSlice)
 }
 
+// Create a new parser allocating size for size headers
 func NewSizedHTTPParser(size int) *HTTPParser {
 	return &HTTPParser{
 		headers:      make([]header, size),
@@ -224,7 +225,7 @@ loop:
 	return 0, ErrMissingData
 }
 
-// Return the value of a header matching +name+.
+// Return a value of a header matching name.
 func (hp *HTTPParser) FindHeader(name []byte) []byte {
 	for _, header := range hp.headers {
 		if bytes.Equal(header.Name, name) {
@@ -241,7 +242,7 @@ func (hp *HTTPParser) FindHeader(name []byte) []byte {
 	return nil
 }
 
-// Return the value of a header matching +name+.
+// Return all values of a header matching name.
 func (hp *HTTPParser) FindAllHeaders(name []byte) [][]byte {
 	var headers [][]byte
 
