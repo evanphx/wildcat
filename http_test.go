@@ -88,10 +88,21 @@ func BenchmarkNetHTTP3(b *testing.B) {
 
 var short = []byte("GET / HT")
 
-func nTestParseMissingData(t *testing.T) {
+func TestParseMissingData(t *testing.T) {
 	hp := NewHTTPParser()
 
 	err := hp.Parse(short)
 
 	assert.Equal(t, err, ErrMissingData)
+}
+
+var multiline = []byte("GET / HTTP/1.0\r\nHost: cookie.com\r\n  more host\r\n\r\n")
+
+func TestParseMultlineHeader(t *testing.T) {
+	hp := NewHTTPParser()
+
+	err := hp.Parse(multiline)
+	require.NoError(t, err)
+
+	assert.Equal(t, []byte("cookie.com more host"), hp.FindHeader([]byte("Host")))
 }

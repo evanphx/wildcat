@@ -194,6 +194,7 @@ func (hp *HTTPParser) Parse3(input []byte) error {
 }
 
 var ErrMissingData = errors.New("missing data")
+var ErrUnsupported = errors.New("unsupported http feature")
 
 func (hp *HTTPParser) Parse(input []byte) (err error) {
 	var headers int
@@ -281,6 +282,8 @@ loop:
 				state = 6
 			case '\n':
 				return nil
+			case ' ', '\t':
+				state = 7
 			default:
 				start = i
 				state = 0
@@ -318,6 +321,30 @@ loop:
 				return ErrBadProto
 			}
 			state = 5
+
+		case 7:
+			if input[i] != ' ' {
+				start = i
+				state = 8
+			}
+		case 8:
+			switch input[i] {
+			case '\r':
+				state = 3
+			case '\n':
+				state = 5
+			default:
+				continue
+			}
+
+			cur := hp.headers[h-1].Value
+
+			newheader := make([]byte, len(cur)+1+(i-start))
+			copy(newheader, cur)
+			copy(newheader[len(cur):], []byte(" "))
+			copy(newheader[len(cur)+1:], input[start:i])
+
+			hp.headers[h-1].Value = newheader
 		}
 	}
 
