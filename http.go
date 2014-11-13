@@ -209,24 +209,6 @@ loop:
 	}
 
 	return 0, ErrMissingData
-
-	/*
-		for input[headers] != '\r' {
-			for i := headers; i < len(input); i++ {
-				if input[i] == ':' {
-					for j := i + 2; j < len(input); j++ {
-						if input[j] == '\r' {
-							hp.headers[h] = header{input[headers:i], input[i+2 : j]}
-							h++
-							headers = j + 2
-							break
-						}
-					}
-					break
-				}
-			}
-		}
-	*/
 }
 
 // Return the value of a header matching +name+.
