@@ -1,5 +1,3 @@
-package wildcat
-
 /*
 
 Wildcat provides a HTTP parser that performs zero allocations, in scans a buffer
@@ -23,3 +21,5 @@ NOTE: FindHeader only returns the first header that matches the requested name.
 If a request contains multiple values for the same header, use FindAllHeaders.
 
 */
+
+package wildcat
