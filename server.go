@@ -1,12 +1,14 @@
 package wildcat
 
-import (
-	"fmt"
-	"net"
-)
+import "net"
+
+type Handler interface {
+	HandleConnection(parser *HTTPParser, rest []byte, c net.Conn)
+}
 
 type Server struct {
 	Listener net.Listener
+	Handler  Handler
 }
 
 func (s *Server) Listen() error {
@@ -20,11 +22,8 @@ func (s *Server) Listen() error {
 	}
 }
 
-var static = []byte("HTTP/1.1 200 OK\r\nContent-Length: 11\r\n\r\nhello world")
-
 func (s *Server) handle(c net.Conn) {
-	fmt.Printf("new conn!\n")
-	buf := make([]byte, 1500)
+	buf := make([]byte, OptimalBufferSize)
 
 	hp := NewHTTPParser()
 
@@ -34,11 +33,24 @@ func (s *Server) handle(c net.Conn) {
 			return
 		}
 
-		_, err = hp.Parse(buf[0:n])
+		res, err := hp.Parse(buf[:n])
+		for err == ErrMissingData {
+			var m int
+
+			m, err = c.Read(buf[n:])
+			if err != nil {
+				return
+			}
+
+			n += m
+
+			res, err = hp.Parse(buf[:n])
+		}
+
 		if err != nil {
 			panic(err)
 		}
 
-		c.Write(static)
+		s.Handler.HandleConnection(hp, buf[res:n], c)
 	}
 }

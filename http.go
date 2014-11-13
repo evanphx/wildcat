@@ -2,10 +2,13 @@ package wildcat
 
 import (
 	"bytes"
+	"io"
 	"strconv"
 
 	"github.com/vektra/errors"
 )
+
+const OptimalBufferSize = 1500
 
 type header struct {
 	Name  []byte
@@ -35,8 +38,9 @@ func NewHTTPParser() *HTTPParser {
 // Create a new parser allocating size for size headers
 func NewSizedHTTPParser(size int) *HTTPParser {
 	return &HTTPParser{
-		headers:      make([]header, size),
-		totalHeaders: size,
+		headers:       make([]header, size),
+		totalHeaders:  size,
+		contentLength: -1,
 	}
 }
 
@@ -287,4 +291,20 @@ func (hp *HTTPParser) ContentLength() int {
 
 	hp.contentLengthRead = true
 	return hp.contentLength
+}
+
+func (hp *HTTPParser) BodyReader(rest []byte, in io.Reader) io.Reader {
+	return BodyReader(hp.ContentLength(), rest, in)
+}
+
+var cGet = []byte("GET")
+
+func (hp *HTTPParser) Get() bool {
+	return bytes.Equal(hp.Method, cGet)
+}
+
+var cPost = []byte("POST")
+
+func (hp *HTTPParser) Post() bool {
+	return bytes.Equal(hp.Method, cPost)
 }
