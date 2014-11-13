@@ -109,26 +109,26 @@ path:
 		return 0, ErrMissingData
 	}
 
-	var state int
+	var readN bool
 
 	ok = false
 loop:
 	for i := version; i < total; i++ {
 		c := input[i]
 
-		switch state {
-		case 0:
+		switch readN {
+		case false:
 			switch c {
 			case '\r':
 				hp.Version = input[version:i]
-				state = 1
+				readN = true
 			case '\n':
 				hp.Version = input[version:i]
 				headers = i + 1
 				ok = true
 				break loop
 			}
-		case 1:
+		case true:
 			if c != '\n' {
 				return 0, errors.Context(ErrBadProto, "missing newline in version")
 			}
@@ -146,7 +146,7 @@ loop:
 
 	var headerName []byte
 
-	state = eNextHeader
+	state := eNextHeader
 
 	start := headers
 
