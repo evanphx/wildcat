@@ -198,37 +198,45 @@ var ErrMissingData = errors.New("missing data")
 func (hp *HTTPParser) Parse(input []byte) (err error) {
 	var headers int
 	var path int
+	var ok bool
 
-	for i := 0; i < len(input); i++ {
+	total := len(input)
+
+	for i := 0; i < total; i++ {
 		if input[i] == ' ' {
 			hp.Method = input[0:i]
+			ok = true
 			path = i + 1
 			break
 		}
 	}
 
-	if hp.Method == nil {
+	if !ok {
 		return ErrMissingData
 	}
 
 	var version int
 
-	for i := path; i < len(input); i++ {
+	ok = false
+
+	for i := path; i < total; i++ {
 		if input[i] == ' ' {
+			ok = true
 			hp.Path = input[path:i]
 			version = i + 1
 			break
 		}
 	}
 
-	if hp.Path == nil {
+	if !ok {
 		return ErrMissingData
 	}
 
 	var state int
 
+	ok = false
 loop:
-	for i := version; i < len(input); i++ {
+	for i := version; i < total; i++ {
 		c := input[i]
 
 		switch state {
@@ -240,6 +248,7 @@ loop:
 			case '\n':
 				hp.Version = input[version:i]
 				headers = i + 1
+				ok = true
 				break loop
 			}
 		case 1:
@@ -247,11 +256,12 @@ loop:
 				return errors.Context(ErrBadProto, "missing newline in version")
 			}
 			headers = i + 1
+			ok = true
 			break loop
 		}
 	}
 
-	if hp.Version == nil {
+	if !ok {
 		return ErrMissingData
 	}
 
@@ -263,7 +273,7 @@ loop:
 
 	start := headers
 
-	for i := headers; i < len(input); i++ {
+	for i := headers; i < total; i++ {
 		switch state {
 		case 5:
 			switch input[i] {
