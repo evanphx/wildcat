@@ -15,8 +15,10 @@ var simple = []byte("GET / HTTP/1.0\r\n\r\n")
 func TestParseSimple(t *testing.T) {
 	hp := NewHTTPParser()
 
-	err := hp.Parse(simple)
+	n, err := hp.Parse(simple)
 	require.NoError(t, err)
+
+	assert.Equal(t, n, len(simple))
 
 	assert.Equal(t, []byte("HTTP/1.0"), hp.Version)
 
@@ -44,7 +46,7 @@ var simpleHeaders = []byte("GET / HTTP/1.0\r\nHost: cookie.com\r\n\r\n")
 func TestParseSimpleHeaders(t *testing.T) {
 	hp := NewHTTPParser()
 
-	err := hp.Parse(simpleHeaders)
+	_, err := hp.Parse(simpleHeaders)
 	require.NoError(t, err)
 
 	assert.Equal(t, []byte("cookie.com"), hp.FindHeader([]byte("Host")))
@@ -63,7 +65,7 @@ var simple3Headers = []byte("GET / HTTP/1.0\r\nHost: cookie.com\r\nDate: foobar\
 func TestParseSimple3Headers(t *testing.T) {
 	hp := NewHTTPParser()
 
-	err := hp.Parse(simple3Headers)
+	_, err := hp.Parse(simple3Headers)
 	require.NoError(t, err)
 
 	assert.Equal(t, []byte("cookie.com"), hp.FindHeader([]byte("Host")))
@@ -91,7 +93,7 @@ var short = []byte("GET / HT")
 func TestParseMissingData(t *testing.T) {
 	hp := NewHTTPParser()
 
-	err := hp.Parse(short)
+	_, err := hp.Parse(short)
 
 	assert.Equal(t, err, ErrMissingData)
 }
@@ -101,7 +103,7 @@ var multiline = []byte("GET / HTTP/1.0\r\nHost: cookie.com\r\n  more host\r\n\r\
 func TestParseMultlineHeader(t *testing.T) {
 	hp := NewHTTPParser()
 
-	err := hp.Parse(multiline)
+	_, err := hp.Parse(multiline)
 	require.NoError(t, err)
 
 	assert.Equal(t, []byte("cookie.com more host"), hp.FindHeader([]byte("Host")))

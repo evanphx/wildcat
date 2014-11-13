@@ -34,7 +34,7 @@ func (s *Server) handle(c net.Conn) {
 			return
 		}
 
-		err = hp.Parse(buf[0:n])
+		_, err = hp.Parse(buf[0:n])
 		if err != nil {
 			panic(err)
 		}

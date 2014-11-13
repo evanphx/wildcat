@@ -17,6 +17,7 @@ type HTTPParser struct {
 	headers []header
 }
 
+// Create a new parser
 func NewHTTPParser() *HTTPParser {
 	return &HTTPParser{
 		headers: make([]header, 10, 10),
@@ -196,7 +197,14 @@ func (hp *HTTPParser) Parse3(input []byte) error {
 var ErrMissingData = errors.New("missing data")
 var ErrUnsupported = errors.New("unsupported http feature")
 
-func (hp *HTTPParser) Parse(input []byte) (err error) {
+// Parse the buffer as an HTTP Request. The buffer must contain the entire
+// request or Parse will return ErrMissingData for the caller to get more
+// data. (this thusly favors getting a completed request in a single Read()
+// call).
+//
+// Returns the number of bytes used by the header (thus where the body begins).
+// Also can return ErrUnsupported if an HTTP feature is detected but not supported.
+func (hp *HTTPParser) Parse(input []byte) (int, error) {
 	var headers int
 	var path int
 	var ok bool
@@ -215,7 +223,7 @@ method:
 	}
 
 	if !ok {
-		return ErrMissingData
+		return 0, ErrMissingData
 	}
 
 	var version int
@@ -234,7 +242,7 @@ path:
 	}
 
 	if !ok {
-		return ErrMissingData
+		return 0, ErrMissingData
 	}
 
 	var state int
@@ -258,7 +266,7 @@ loop:
 			}
 		case 1:
 			if c != '\n' {
-				return errors.Context(ErrBadProto, "missing newline in version")
+				return 0, errors.Context(ErrBadProto, "missing newline in version")
 			}
 			headers = i + 1
 			ok = true
@@ -267,7 +275,7 @@ loop:
 	}
 
 	if !ok {
-		return ErrMissingData
+		return 0, ErrMissingData
 	}
 
 	var h int
@@ -285,7 +293,7 @@ loop:
 			case '\r':
 				state = 6
 			case '\n':
-				return nil
+				return i + 1, nil
 			case ' ', '\t':
 				state = 7
 			default:
@@ -294,10 +302,10 @@ loop:
 			}
 		case 6:
 			if input[i] != '\n' {
-				return ErrBadProto
+				return 0, ErrBadProto
 			}
 
-			return nil
+			return i + 1, nil
 		case 0:
 			if input[i] == ':' {
 				headerName = input[start:i]
@@ -325,7 +333,7 @@ loop:
 			h++
 		case 3:
 			if input[i] != '\n' {
-				return ErrBadProto
+				return 0, ErrBadProto
 			}
 			state = 5
 
@@ -358,7 +366,7 @@ loop:
 		}
 	}
 
-	return ErrMissingData
+	return 0, ErrMissingData
 
 	/*
 		for input[headers] != '\r' {
@@ -377,10 +385,9 @@ loop:
 			}
 		}
 	*/
-
-	return nil
 }
 
+// Return the value of a header matching +name+.
 func (hp *HTTPParser) FindHeader(name []byte) []byte {
 	for _, header := range hp.headers {
 		if bytes.Equal(header.Name, name) {
