@@ -21,5 +21,4 @@ NOTE: FindHeader only returns the first header that matches the requested name.
 If a request contains multiple values for the same header, use FindAllHeaders.
 
 */
-
 package wildcat
