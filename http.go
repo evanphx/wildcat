@@ -25,12 +25,17 @@ type HTTPParser struct {
 	contentLengthRead bool
 }
 
+const DefaultHeaderSlice = 10
+
 // Create a new parser
 func NewHTTPParser() *HTTPParser {
+	return NewSizedHTTPParser(DefaultHeaderSlice)
+}
+
+func NewSizedHTTPParser(size int) *HTTPParser {
 	return &HTTPParser{
-		headers:       make([]header, 10),
-		totalHeaders:  10,
-		contentLength: -1,
+		headers:      make([]header, size),
+		totalHeaders: size,
 	}
 }
 
@@ -236,8 +241,22 @@ func (hp *HTTPParser) FindHeader(name []byte) []byte {
 	return nil
 }
 
+// Return the value of a header matching +name+.
+func (hp *HTTPParser) FindAllHeaders(name []byte) [][]byte {
+	var headers [][]byte
+
+	for _, header := range hp.headers {
+		if bytes.EqualFold(header.Name, name) {
+			headers = append(headers, header.Value)
+		}
+	}
+
+	return headers
+}
+
 var cHost = []byte("Host")
 
+// Return the value of the Host header
 func (hp *HTTPParser) Host() []byte {
 	if hp.hostRead {
 		return hp.host
@@ -250,6 +269,8 @@ func (hp *HTTPParser) Host() []byte {
 
 var cContentLength = []byte("Content-Length")
 
+// Return the value of the Content-Length header.
+// A value of -1 indicates the header was not set.
 func (hp *HTTPParser) ContentLength() int {
 	if hp.contentLengthRead {
 		return hp.contentLength

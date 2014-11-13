@@ -129,3 +129,17 @@ func TestFindHeaderIgnoresCase(t *testing.T) {
 
 	assert.Equal(t, []byte("50"), hp.FindHeader([]byte("content-length")))
 }
+
+var multipleHeaders = []byte("GET / HTTP/1.0\r\nBar: foo\r\nBar: quz\r\n\r\n")
+
+func TestFindAllHeaders(t *testing.T) {
+	hp := NewHTTPParser()
+
+	_, err := hp.Parse(multipleHeaders)
+	require.NoError(t, err)
+
+	bar := []byte("Bar")
+
+	assert.Equal(t, []byte("foo"), hp.FindHeader(bar))
+	assert.Equal(t, [][]byte{[]byte("foo"), []byte("quz")}, hp.FindAllHeaders(bar))
+}
