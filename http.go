@@ -203,12 +203,14 @@ func (hp *HTTPParser) Parse(input []byte) (err error) {
 
 	total := len(input)
 
+method:
 	for i := 0; i < total; i++ {
-		if input[i] == ' ' {
+		switch input[i] {
+		case ' ', '\t':
 			hp.Method = input[0:i]
 			ok = true
 			path = i + 1
-			break
+			break method
 		}
 	}
 
@@ -220,12 +222,14 @@ func (hp *HTTPParser) Parse(input []byte) (err error) {
 
 	ok = false
 
+path:
 	for i := path; i < total; i++ {
-		if input[i] == ' ' {
+		switch input[i] {
+		case ' ', '\t':
 			ok = true
 			hp.Path = input[path:i]
 			version = i + 1
-			break
+			break path
 		}
 	}
 
@@ -300,10 +304,13 @@ loop:
 				state = 1
 			}
 		case 1:
-			if input[i] != ' ' {
-				start = i
-				state = 2
+			switch input[i] {
+			case ' ', '\t':
+				continue
 			}
+
+			start = i
+			state = 2
 		case 2:
 			switch input[i] {
 			case '\r':
@@ -323,10 +330,13 @@ loop:
 			state = 5
 
 		case 7:
-			if input[i] != ' ' {
-				start = i
-				state = 8
+			switch input[i] {
+			case ' ', '\t':
+				continue
 			}
+
+			start = i
+			state = 8
 		case 8:
 			switch input[i] {
 			case '\r':
