@@ -36,12 +36,5 @@ func (x *X) HandleConnection(hp *wildcat.HTTPParser, rest []byte, c net.Conn) {
 }
 
 func main() {
-	l, err := net.Listen("tcp", ":9594")
-	if err != nil {
-		panic(err)
-	}
-
-	s := &wildcat.Server{l, &X{}}
-
-	s.Listen()
+	wildcat.ListenAndServe(":9594", &X{})
 }
