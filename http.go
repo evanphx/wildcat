@@ -24,7 +24,7 @@ type HTTPParser struct {
 	host     []byte
 	hostRead bool
 
-	contentLength     int
+	contentLength     int64
 	contentLengthRead bool
 }
 
@@ -287,14 +287,14 @@ var cContentLength = []byte("Content-Length")
 
 // Return the value of the Content-Length header.
 // A value of -1 indicates the header was not set.
-func (hp *HTTPParser) ContentLength() int {
+func (hp *HTTPParser) ContentLength() int64 {
 	if hp.contentLengthRead {
 		return hp.contentLength
 	}
 
 	header := hp.FindHeader(cContentLength)
 	if header != nil {
-		i, err := strconv.Atoi(string(header))
+		i, err := strconv.ParseInt(string(header), 10, 0)
 		if err == nil {
 			hp.contentLength = i
 		}
@@ -304,7 +304,7 @@ func (hp *HTTPParser) ContentLength() int {
 	return hp.contentLength
 }
 
-func (hp *HTTPParser) BodyReader(rest []byte, in io.Reader) io.Reader {
+func (hp *HTTPParser) BodyReader(rest []byte, in io.ReadCloser) io.ReadCloser {
 	return BodyReader(hp.ContentLength(), rest, in)
 }
 

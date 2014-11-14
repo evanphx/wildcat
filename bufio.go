@@ -1,14 +1,11 @@
 package wildcat
 
-import (
-	"bytes"
-	"io"
-)
+import "io"
 
 type sizedBodyReader struct {
-	size int
+	size int64
 	rest []byte
-	c    io.Reader
+	c    io.ReadCloser
 }
 
 func (br *sizedBodyReader) Read(buf []byte) (int, error) {
@@ -21,14 +18,14 @@ func (br *sizedBodyReader) Read(buf []byte) (int, error) {
 			copy(buf, br.rest[:len(buf)])
 
 			br.rest = br.rest[len(buf):]
-			br.size -= len(buf)
+			br.size -= int64(len(buf))
 			return len(buf), nil
 		} else {
 			l := len(br.rest)
 			copy(buf, br.rest)
 
 			br.rest = nil
-			br.size -= l
+			br.size -= int64(l)
 			return l, nil
 		}
 	}
@@ -38,13 +35,17 @@ func (br *sizedBodyReader) Read(buf []byte) (int, error) {
 		return 0, err
 	}
 
-	br.size -= n
+	br.size -= int64(n)
 	return n, nil
+}
+
+func (br *sizedBodyReader) Close() error {
+	return br.c.Close()
 }
 
 type unsizedBodyReader struct {
 	rest []byte
-	c    io.Reader
+	c    io.ReadCloser
 }
 
 func (br *unsizedBodyReader) Read(buf []byte) (int, error) {
@@ -66,10 +67,14 @@ func (br *unsizedBodyReader) Read(buf []byte) (int, error) {
 	return br.c.Read(buf)
 }
 
-func BodyReader(size int, rest []byte, c io.Reader) io.Reader {
+func (br *unsizedBodyReader) Close() error {
+	return br.c.Close()
+}
+
+func BodyReader(size int64, rest []byte, c io.ReadCloser) io.ReadCloser {
 	switch size {
 	case 0:
-		return bytes.NewReader([]byte(""))
+		return nil
 	case -1:
 		return &unsizedBodyReader{rest, c}
 	default:

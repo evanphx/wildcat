@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"net/http"
 
 	"github.com/evanphx/wildcat"
 )
-
-var static = []byte("HTTP/1.1 200 OK\r\nContent-Length: 11\r\n\r\nhello world")
 
 type X struct{}
 
@@ -35,6 +34,17 @@ func (x *X) HandleConnection(hp *wildcat.HTTPParser, rest []byte, c net.Conn) {
 	resp.WriteBodyBytes([]byte("hello world\n"))
 }
 
+func static(w http.ResponseWriter, req *http.Request) {
+	w.Write([]byte("hello world\n"))
+}
+
 func main() {
 	wildcat.ListenAndServe(":9594", &X{})
+
+	// h := http.HandlerFunc(static)
+
+	// http.ListenAndServe(":9594", h)
+
+	// wildcat.ListenAndServe(":9594", wildcat.AdaptServeHTTP(h))
+
 }
