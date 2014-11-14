@@ -22,9 +22,9 @@ func AdaptServeHTTP(h http.Handler) Handler {
 func (a *adaptServeHTTP) convertHeader(hp *HTTPParser) http.Header {
 	header := make(http.Header)
 
-	for _, h := range hp.headers {
+	for _, h := range hp.Headers {
 		if h.Name == nil {
-			break
+			continue
 		}
 
 		header[string(h.Name)] = append(header[string(h.Name)], string(h.Value))

@@ -18,8 +18,8 @@ type header struct {
 type HTTPParser struct {
 	Method, Path, Version []byte
 
-	headers      []header
-	totalHeaders int
+	Headers      []header
+	TotalHeaders int
 
 	host     []byte
 	hostRead bool
@@ -38,8 +38,8 @@ func NewHTTPParser() *HTTPParser {
 // Create a new parser allocating size for size headers
 func NewSizedHTTPParser(size int) *HTTPParser {
 	return &HTTPParser{
-		headers:       make([]header, size),
-		totalHeaders:  size,
+		Headers:       make([]header, size),
+		TotalHeaders:  size,
 		contentLength: -1,
 	}
 }
@@ -193,14 +193,14 @@ loop:
 				continue
 			}
 
-			hp.headers[h] = header{headerName, input[start:i]}
+			hp.Headers[h] = header{headerName, input[start:i]}
 			h++
 
-			if h == hp.totalHeaders {
-				newHeaders := make([]header, hp.totalHeaders+10)
-				copy(newHeaders, hp.headers)
-				hp.headers = newHeaders
-				hp.totalHeaders += 10
+			if h == hp.TotalHeaders {
+				newHeaders := make([]header, hp.TotalHeaders+10)
+				copy(newHeaders, hp.Headers)
+				hp.Headers = newHeaders
+				hp.TotalHeaders += 10
 			}
 		case eHeaderValueN:
 			if input[i] != '\n' {
@@ -226,14 +226,14 @@ loop:
 				continue
 			}
 
-			cur := hp.headers[h-1].Value
+			cur := hp.Headers[h-1].Value
 
 			newheader := make([]byte, len(cur)+1+(i-start))
 			copy(newheader, cur)
 			copy(newheader[len(cur):], []byte(" "))
 			copy(newheader[len(cur)+1:], input[start:i])
 
-			hp.headers[h-1].Value = newheader
+			hp.Headers[h-1].Value = newheader
 		}
 	}
 
@@ -242,13 +242,13 @@ loop:
 
 // Return a value of a header matching name.
 func (hp *HTTPParser) FindHeader(name []byte) []byte {
-	for _, header := range hp.headers {
+	for _, header := range hp.Headers {
 		if bytes.Equal(header.Name, name) {
 			return header.Value
 		}
 	}
 
-	for _, header := range hp.headers {
+	for _, header := range hp.Headers {
 		if bytes.EqualFold(header.Name, name) {
 			return header.Value
 		}
@@ -261,7 +261,7 @@ func (hp *HTTPParser) FindHeader(name []byte) []byte {
 func (hp *HTTPParser) FindAllHeaders(name []byte) [][]byte {
 	var headers [][]byte
 
-	for _, header := range hp.headers {
+	for _, header := range hp.Headers {
 		if bytes.EqualFold(header.Name, name) {
 			headers = append(headers, header.Value)
 		}
